@@ -2,7 +2,9 @@ module LispParser where
 
 import LispVal
 import Control.Monad
+import Control.Monad.Error
 import Text.ParserCombinators.Parsec hiding (spaces)
+
 
 symbol :: Parser Char
 symbol = oneOf "!$%&|*+-/:<=?>@^_~#"
@@ -10,10 +12,10 @@ symbol = oneOf "!$%&|*+-/:<=?>@^_~#"
 spaces :: Parser ()
 spaces = skipMany1 space
 
-readExpr :: String -> LispVal
+readExpr :: String -> ThrowsError LispVal
 readExpr input = case parse parseExpr "lisp" input of 
-    Left  err -> String $ "No match: " ++ show err
-    Right val -> val
+    Left  err -> throwError $ Parser err
+    Right val -> return val
 
 
 
@@ -37,7 +39,7 @@ parseAtom = do
 
 parseNumber :: Parser LispVal
 parseNumber = do 
-	num <- many digit 
+	num <- many1 digit 
 	return $ (Number . read) num
               
 
@@ -50,9 +52,10 @@ spaces1 = skipMany1 space
 parseList :: Parser LispVal
 parseList = do 
 	char '(' 
-	x <- fmap List $ sepBy parseExpr spaces1 
+	x <- liftM List $ sepBy parseExpr spaces1 
 	char ')' 
 	return x
+
 
 
 parseDottedList :: Parser LispVal

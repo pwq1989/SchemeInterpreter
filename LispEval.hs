@@ -3,21 +3,50 @@ module LispEval where
 import LispVal
 import LispParser
 import Control.Monad
+import Control.Monad.Error
 import Text.ParserCombinators.Parsec hiding (spaces)
 
 
 
-eval :: LispVal -> LispVal
-eval val@(String _) = val
-eval val@(Number _) = val
-eval val@(Bool _) = val
-eval (List [Atom "quote", val]) = val
-eval (List (Atom func : args)) = apply func $ map eval args
+eval :: LispVal -> ThrowsError LispVal
+eval val@(String _)             = return val
+eval val@(Number _)             = return val
+eval val@(Bool _)               = return val
+eval (List [Atom "quote", val]) = return val
+--eval (List (Atom func : args))  = return $ apply func $ mapM eval args
+eval (List (Atom func : args))  = mapM eval args >>= apply func
 
-apply :: String -> [LispVal] -> LispVal
-apply func args = maybe (Bool False) ($ args) $ lookup func primitives
+apply :: String -> [LispVal] -> ThrowsError LispVal
+apply func args = maybe (throwError $ NotFunction "Unrecognized primitive function args" func) 
+                  ($ args) 
+                  (lookup func primitives)
 
-primitives :: [(String, [LispVal] -> LispVal)]
+
+primitives :: [(String, [LispVal] -> ThrowsError LispVal)]
+primitives = [("+",          numericBinop (+)),
+              ("-",          numericBinop (-)),
+              ("*",          numericBinop (*)),
+              ("/",          numericBinop div),
+              ("mod",        numericBinop mod),
+              ("quotient",   numericBinop quot),
+              ("remainder",  numericBinop rem)]
+
+numericBinop :: (Integer -> Integer -> Integer) -> [LispVal] -> ThrowsError LispVal
+numericBinop op singleVal@[_] = throwError $ NumberArgs 2 singleVal
+numericBinop op params        = mapM unpackNum params >>= return . Number . foldl1 op
+
+unpackNum :: LispVal -> ThrowsError Integer
+unpackNum (Number n) = return n
+unpackNum (String n) = let parsed = reads n in
+						if null parsed
+							then throwError $ TypeMismatch "Number " $ String n
+							else return $ fst $ parsed !! 0
+unpackNum (List [n]) = unpackNum n
+unpackNum notNumber  = throwError $ TypeMismatch "number " notNumber
+
+
+
+
 
 
 

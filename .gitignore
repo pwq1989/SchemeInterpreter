@@ -8,3 +8,4 @@ cabal-dev
 *.exe
 *.sublime-project
 *.sublime-workspace
+Test.hs
