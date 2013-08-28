@@ -29,7 +29,18 @@ primitives = [("+",          numericBinop (+)),
               ("/",          numericBinop div),
               ("mod",        numericBinop mod),
               ("quotient",   numericBinop quot),
-              ("remainder",  numericBinop rem)]
+              ("remainder",  numericBinop rem),
+              ("=",          numBoolBinOp (==)),
+              ("<",          numBoolBinOp (<)),
+              (">",          numBoolBinOp (>)),
+              (">=",         numBoolBinOp (>=)),
+              ("<=",         numBoolBinOp (<=)),
+              ("&&",         boolBoolBinOp (&&)),
+              ("||",         boolBoolBinOp (||)),
+              ("string=?",   strBoolBinOp (==)),
+              ("string?",    strBoolBinOp (>)),
+              ("string<=?",  strBoolBinOp (<=)),
+              ("string>=?",  strBoolBinOp (>=))]
 
 numericBinop :: (Integer -> Integer -> Integer) -> [LispVal] -> ThrowsError LispVal
 numericBinop op singleVal@[_] = throwError $ NumberArgs 2 singleVal
@@ -42,7 +53,27 @@ unpackNum (String n) = let parsed = reads n in
 							then throwError $ TypeMismatch "Number " $ String n
 							else return $ fst $ parsed !! 0
 unpackNum (List [n]) = unpackNum n
-unpackNum notNumber  = throwError $ TypeMismatch "number " notNumber
+unpackNum notNumber  = throwError $ TypeMismatch "Number " notNumber
+
+unpackStr :: LispVal -> ThrowsError String
+unpackStr (String s) = return s
+unpackStr badArg     = throwError $ TypeMismatch "String" badArg
+
+unpackBool :: LispVal -> ThrowsError Bool
+unpackBool (Bool b) = return b
+unpackBool badArg   = throwError $ TypeMismatch "Boolean" badArg
+
+boolBinOp :: (LispVal -> ThrowsError a) -> (a -> a -> Bool) -> [LispVal] -> ThrowsError LispVal
+boolBinOp unpacker op args = if length args /= 2 
+                             then throwError $ NumberArgs 2 args 
+                             else do left  <- unpacker $ args !! 0
+                                     right <- unpacker $ args !! 1
+                                     return $ Bool $ left `op` right
+
+
+numBoolBinOp  = boolBinOp unpackNum
+strBoolBinOp  = boolBinOp unpackStr
+boolBoolBinOp = boolBinOp unpackBool
 
 
 

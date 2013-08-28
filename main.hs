@@ -13,3 +13,6 @@ main = do
 	args <- getArgs
 	evaled <- return $ liftM show $ readExpr(args !! 0) >>= eval
 	putStrLn $ extractValue $ trapError evaled
+
+	--print $ show  (args !! 0)
+	--print $ liftM show $ readExpr (args !! 0)

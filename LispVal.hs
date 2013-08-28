@@ -62,4 +62,3 @@ extractValue (Right val) = val
 trapError action = catchError action (return . show)
 
 
-
