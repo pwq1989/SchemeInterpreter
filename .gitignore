@@ -1,0 +1,11 @@
+dist
+cabal-dev
+*.o
+*.hi
+*.chi
+*.chs.h
+.virthualenv
+*.exe
+*.sublime-project
+*.sublime-workspace
+Test.hs
