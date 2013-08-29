@@ -1,0 +1,1 @@
+ghc -XExistentialQuantification -o test main.hs

@@ -124,3 +124,21 @@ eqv [(Bool arg1), (Bool arg2)]             = return . Bool $ arg1 == arg2
 eqv [(Atom arg1), (Atom arg2)]             = return . Bool $ arg1 == arg2
 eqv [_, _]                                 = return $ Bool False
 eqv badArgList                             = throwError $ NumberArgs 2 badArgList
+
+
+data Unpacker = forall a. Eq a => AnyUnpacker (LispVal -> ThrowsError a)
+
+unpackEquals :: LispVal -> LispVal -> Unpacker -> ThrowsError Bool
+unpackEquals x y (AnyUnpacker unpack) = do
+    unpackedx <- unpack x
+    unpackedy <- unpack y
+    return (unpackedx == unpackedy) `catchError` (const $ return False)
+
+equal :: [LispVal] -> ThrowsError LispVal
+equal [arg1, arg2] = do
+      primitiveEquals <- fmap or $ mapM (unpackEquals arg1 arg2) [AnyUnpacker unpackNum,
+                                                                  AnyUnpacker unpackStr,
+                                                                  AnyUnpacker unpackBool]
+      eqvEquals <- eqv [arg1, arg2]
+      return . Bool $ primitiveEquals || let (Bool x) = eqvEquals in x
+equal badArgList = throwError $ NumberArgs 2 badArgList
