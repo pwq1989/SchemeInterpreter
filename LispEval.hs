@@ -16,15 +16,13 @@ eval (List [Atom "quote", val]) = return val
 --eval (List (Atom func : args))  = return $ apply func $ mapM eval args
 eval (List (Atom func : args))  = mapM eval args >>= apply func
 
-<<<<<<< HEAD
 eval (List [Atom "if", precidate, consequent, alternative]) = 
     do result <- eval precidate
        case result of
            Bool False -> eval alternative
            otherwise  -> eval consequent
 
-=======
->>>>>>> 57eeef42e1d13afd1eb809ea59df474900ab057c
+
 apply :: String -> [LispVal] -> ThrowsError LispVal
 apply func args = maybe (throwError $ NotFunction "Unrecognized primitive function args" func) 
                   ($ args) 
@@ -85,7 +83,6 @@ strBoolBinOp  = boolBinOp unpackStr
 boolBoolBinOp = boolBinOp unpackBool
 
 
-<<<<<<< HEAD
 car :: [LispVal] -> ThrowsError LispVal
 car [List (x:xs)]         = return x
 car [DottedList (x:xs) _] = return x
@@ -127,5 +124,3 @@ eqv [(Bool arg1), (Bool arg2)]             = return . Bool $ arg1 == arg2
 eqv [(Atom arg1), (Atom arg2)]             = return . Bool $ arg1 == arg2
 eqv [_, _]                                 = return $ Bool False
 eqv badArgList                             = throwError $ NumberArgs 2 badArgList
-=======
->>>>>>> 57eeef42e1d13afd1eb809ea59df474900ab057c
