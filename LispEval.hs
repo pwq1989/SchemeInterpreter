@@ -2,6 +2,7 @@ module LispEval where
 
 import LispVal
 import LispParser
+import System.IO
 import Control.Monad
 import Control.Monad.Error
 import Text.ParserCombinators.Parsec hiding (spaces)
@@ -47,7 +48,13 @@ primitives = [("+",          numericBinop (+)),
               ("string=?",   strBoolBinOp (==)),
               ("string?",    strBoolBinOp (>)),
               ("string<=?",  strBoolBinOp (<=)),
-              ("string>=?",  strBoolBinOp (>=))]
+              ("string>=?",  strBoolBinOp (>=)),
+              ("car",        car),
+              ("cdr",        cdr),
+              ("cons",       cons),
+              ("eq?",        eqv),
+              ("eqv?",       eqv),
+              ("equal?",     equal)]
 
 numericBinop :: (Integer -> Integer -> Integer) -> [LispVal] -> ThrowsError LispVal
 numericBinop op singleVal@[_] = throwError $ NumberArgs 2 singleVal
@@ -142,3 +149,24 @@ equal [arg1, arg2] = do
       eqvEquals <- eqv [arg1, arg2]
       return . Bool $ primitiveEquals || let (Bool x) = eqvEquals in x
 equal badArgList = throwError $ NumberArgs 2 badArgList
+
+
+readPrompt :: String -> IO String
+readPrompt prompt = putStr prompt >> hFlush stdout >> getLine
+
+
+evalString :: String -> IO String
+evalString expr = return $ extractValue $ trapError (liftM show $ readExpr expr >>= eval)
+
+evalAndPrint :: String -> IO ()
+evalAndPrint expr = evalString expr >>= putStrLn
+
+untilM_ :: Monad m => (a -> Bool) -> m a -> (a -> m ()) -> m ()
+untilM_ pred prompt action = do
+    result <- prompt 
+    if pred result 
+          then return () 
+          else action result >> untilM_ pred prompt action
+
+runRepl :: IO()
+runRepl = untilM_ (== "quit") (readPrompt "Lisp >>>") evalAndPrint
